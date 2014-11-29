@@ -97,6 +97,9 @@ def edit(request, slug):
     Edit a file
     """
     file = get_object_or_404(File, slug=slug)
+    if request.FILES:
+        for a_file in request.FILES['file']:
+            AssociatedFile.objects.get_or_create(associated_file=a_file, main_file=main_file)
     associated_files = AssociatedFile.objects.filter(main_file=file).values('associated_file')
     associated_files = File.objects.filter(file_id__in=associated_files, status=FileStatus.READY)
     if request.POST:
@@ -224,13 +227,10 @@ def upload_associated_file(request, slug):
             messages.error(request, request.POST["error_message"])
         else:
             messages.success(request, "Associated Files Uploaded! Processing...")
-
-        for associated_file in File.objects.filter(uploaded_by=request.user, type=FileType.TEXT):
-            if AssociatedFile.objects.filter(associated_file=associated_file).exists():
-                pass
-            else:
-                AssociatedFile.objects.create(main_file=main_file, associated_file=associated_file) 
-
+            # we'll update the database on the redirect
+            a_file=File.objects.last()
+            AssociatedFile.objects.create(main_file=main_file, associated_file=a_file)
+        
         return HttpResponseRedirect(reverse('files-edit', args=(slug,)))
 
     uploaded = File.objects.filter(
@@ -281,7 +281,7 @@ def download(request, slug):
     response['Content-Disposition'] = 'attachment; filename=%s' % (file.name)
     # Django doesn't support x-sendfile, so write the file in debug mode
     if settings.DEBUG:
-        shutil.copyfileobj(open(file.file.path), response)
+        shutil.copyfileobj(open(file.file.path, 'rb'), response)
     return response
 
 def media(request, slug):

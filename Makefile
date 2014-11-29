@@ -26,7 +26,6 @@ reload:
 
 # install the site
 install: .env
-	$(shell sudo source .env/bin/activate)
 	# Install ffmpeg from CDN
 	mkdir bin
 	wget https://cdn.research.pdx.edu/ffmpeg/2.4.3/ffmpeg
@@ -36,7 +35,6 @@ install: .env
 	# Database stuff
 	mysql -e "CREATE DATABASE IF NOT EXISTS mlp"
 	./manage.py migrate
-	./manage.py loaddata choices
 
 .env:
 	$(PYTHON) -m venv .env
